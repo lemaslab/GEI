@@ -17,7 +17,6 @@ data.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\
 setwd(work.dir)
 list.files()
 
-
 # **************************************************************************** #
 # ***************                Library                       *************** #
 # **************************************************************************** #
@@ -27,7 +26,6 @@ library(tidyverse)
 library(dplyr)
 library(snpReady)
 library(naniar)
-
 
 # **************************************************************************** #
 # ***************         AssocPed_Full3_10Oct13.dat                                              
@@ -133,18 +131,13 @@ df1=df%>%
   gather(snp, allele, snp1.rs10865710:snp29.rs4253778)%>%
   separate(allele, c("A1", "A2"), sep="_")%>%
   mutate(A1=recode(A1, # A=1, C=2, G=3, T=4
-                      "1"="A",
-                      "2"="C", 
-                      "3"="G",
-                      "4"="T",
+                      "1"="A","2"="C", 
+                      "3"="G","4"="T",
                       "0"="NA"),
          A2=recode(A2, # A=1, C=2, G=3, T=4
-                   "1"="A",
-                   "2"="C", 
-                   "3"="G",
-                   "4"="T",
-                   "0"="NA"))%>%na_if("NA")  %>%
-  # spread(snp, allele)
+                   "1"="A","2"="C", 
+                   "3"="G","4"="T",
+                   "0"="NA"))%>%na_if("NA")  
 
 # SNP ready
   
