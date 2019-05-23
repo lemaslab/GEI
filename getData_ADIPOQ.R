@@ -153,7 +153,7 @@ geno=df1%>%
 
 geno.ready <- raw.data(data =geno, frame = "long", 
                        base = TRUE, sweep.sample = 0.5, 
-                       call.rate = 0.95, maf = 0.05, 
+                       call.rate = 0.8, maf = 0.05, 
                        imput = FALSE)
 
 Mwrth <- data.frame(geno.ready$M.clean)
@@ -176,14 +176,9 @@ test=dat%>%
   ungroup() %>%
   spread(allele, n, fill=0)
 
-df = tbl_df(data.frame(owner=c(0,0,1,1), obs1=c("quiet", "loud", "quiet", "loud"), obs2=c("loud", "loud", "quiet", "quiet")))
-df %>%
-  gather(observation, Val, obs1:obs2) %>% 
-  group_by(owner,observation, Val) %>% 
-  summarise(n= n()) %>%
-  ungroup() %>%
-  spread(Val, n, fill=0)
-  
+# need to order, rename, output as table
+
+
 # https://stackoverflow.com/questions/25811756/summarizing-counts-of-a-factor-with-dplyr
 
 
