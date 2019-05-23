@@ -146,18 +146,20 @@ df1=df%>%
                    "0"="NA"))%>%na_if("NA")  %>%
   # spread(snp, allele)
 
+# SNP ready
+  
+# https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
+
 names(df1)
 
 geno=df1%>%
-  select(unique_id,snp1.rs10865710,snp2.rs12497191,snp3.rs1801282)%>%
+  select(unique_id,snp,A1,A2)%>%
   as.matrix()
 
-geno.ready <- raw.data(data =geno, frame = "wide") 
+geno.ready <- raw.data(data =geno, frame = "long", 
                        base = TRUE, sweep.sample = 0.5, 
                        call.rate = 0.95, maf = 0.10, 
                        imput = FALSE)
-
-
 
 names(df1)
 head(df1)
