@@ -53,7 +53,8 @@ names(dat)
 
 df=dat%>%
   select(Fam,Ind,FA,MO,Sex,d15n,Genotyped,
-    rs10865710_A1, rs10865710_A2,        # PPARG
+         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp, 
+         rs10865710_A1, rs10865710_A2,        # PPARG
          rs12497191_A1, rs12497191_A2,
          rs1801282_A1, rs1801282_A2,
          rs3856806_A1, rs3856806_A2,
@@ -120,6 +121,7 @@ df1=df%>%
          snp28.rs1800206=paste0(rs1800206_A1,"_",rs1800206_A2),
          snp29.rs4253778=paste0(rs4253778_A1,"_",rs4253778_A2))%>%
   select(unique_id,Fam,Ind,FA,MO,Sex,d15n,Genotyped,
+         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp,
          snp1.rs10865710, snp2.rs12497191, snp3.rs1801282, 
          snp4.rs3856806, snp5.rs10937273, snp6.rs822387,
          snp7.APM11426, snp8.rs17300539,  snp9.rs266729,
@@ -153,11 +155,19 @@ geno=df1%>%
 
 geno.ready <- raw.data(data =geno, frame = "long", 
                        base = TRUE, sweep.sample = 0.5, 
-                       call.rate = 0.8, maf = 0.05, 
+                       call.rate = 0.95, maf = 0.05, 
                        imput = FALSE)
 
 Mwrth <- data.frame(geno.ready$M.clean)
 Mwrth[1:10,1:5]
+
+# merge with data
+names(df1)
+
+
+
+
+
 pop.gen <- popgen(M=Mwrth)
 head(pop.gen$whole$Markers)
 str(Mwrth)
