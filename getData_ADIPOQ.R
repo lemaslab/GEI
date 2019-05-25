@@ -141,10 +141,22 @@ df1=df%>%
          A2=recode(A2, # A=1, C=2, G=3, T=4
                    "1"="A","2"="C", 
                    "3"="G","4"="T",
-                   "0"="NA"))%>%na_if("NA")  
+                   "0"="NA"))%>%na_if("NA")%>%
+  mutate(snp=factor(snp, levels = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
+                                    "snp4.rs3856806","snp5.rs10937273","snp6.rs822387",
+                                    "snp7.APM11426","snp8.rs17300539","snp9.rs266729",
+                                    "snp10.rs182052","snp11.rs822393","snp12.rs822394",
+                                    "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
+                                    "snp16.SNP2","snp17.rs2241766","snp18.rs1501299",
+                                    "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
+                                    "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
+                                    "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
+                                    "snp28.rs1800206","snp29.rs4253778")))
+levels(df1$snp)
+
 
 # SNP ready
-  
+names(df1)
 # https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
 
 names(df1)
@@ -160,16 +172,10 @@ geno.ready <- raw.data(data =geno, frame = "long",
 
 Mwrth <- data.frame(geno.ready$M.clean)
 Mwrth[1:10,1:5]
-
-# merge with data
-names(df1)
-
-
-
-
-
 pop.gen <- popgen(M=Mwrth)
 head(pop.gen$whole$Markers)
+qc_dat=pop.gen$whole$Markers
+analysis_snps=row.names(qc_dat)
 str(Mwrth)
 summary(Mwrth)
 names(Mwrth)
