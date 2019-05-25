@@ -131,7 +131,9 @@ df1=df%>%
          snp19.rs2241767, snp20.rs3774261, snp21.rs3774262,
          snp22.rs35554619, snp23.rs8192678, snp24.rs17574213,
          snp25.rs2970847, snp26.rs135549, snp27.rs135539,
-         snp28.rs1800206, snp29.rs4253778)%>%
+         snp28.rs1800206, snp29.rs4253778)
+
+df.geno=df1%>%
   gather(snp, allele, snp1.rs10865710:snp29.rs4253778)%>%
   separate(allele, c("A1", "A2"), sep="_")%>%
   mutate(A1=recode(A1, # A=1, C=2, G=3, T=4
@@ -152,16 +154,16 @@ df1=df%>%
                                     "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
                                     "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
                                     "snp28.rs1800206","snp29.rs4253778")))
-levels(df1$snp)
-
+levels(df.geno$snp)
+names(df.geno)
 
 # SNP ready
-names(df1)
+names(df.geno)
 # https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
 
-names(df1)
+names(df.geno)
 
-geno=df1%>%
+geno=df.geno%>%
   select(unique_id,snp,A1,A2)%>%
   as.matrix()
 
@@ -197,5 +199,28 @@ test=dat%>%
 
 # https://stackoverflow.com/questions/25811756/summarizing-counts-of-a-factor-with-dplyr
 
+# merge genotype data back with outcomes data
+# genotype data
+dim(dat)
+names(dat)
+length(unique(dat$unique_id)) # 967
 
+# outcomes data
+dim(df1)
+names(df1)
+length(unique(df1$unique_id)) # 2231
 
+df.m=df1%>%
+  select(unique_id, Fam,Ind,FA,MO,Sex,d15n,Genotyped,WHRp,
+        BMIp,BodFp,VillageGroup,age,Adipp)
+
+# merge
+df.analysis=left_join(df.m, dat, by="unique_id")
+names(df.analysis)
+range(df.analysis$Fam)
+
+# test analysis 
+require(kinship2)
+load("gaw.rda")
+
+gped <- with(df.analysis, pedigree(unique_id, FA, MO, Sex, famid=Fam))
