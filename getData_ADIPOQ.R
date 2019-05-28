@@ -12,6 +12,8 @@
 
 work.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");work.dir
 data.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");data.dir
+result.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\results\\");result.dir
+
 
 # Set Working Directory
 setwd(work.dir)
@@ -141,8 +143,10 @@ df1=df%>%
                    "3"="G","4"="T",
                    "0"="NA"))%>%na_if("NA")  
 
-# SNP ready
-  
+# **************************************************************************** #
+# ***************                  SNP ready                                             
+# **************************************************************************** #
+
 # https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
 
 names(df1)
@@ -153,11 +157,30 @@ geno=df1%>%
 
 geno.ready <- raw.data(data =geno, frame = "long", 
                        base = TRUE, sweep.sample = 0.5, 
-                       call.rate = 0.8, maf = 0.05, 
+                       call.rate = 0.95, maf = 0.05, 
                        imput = FALSE)
 
 Mwrth <- data.frame(geno.ready$M.clean)
 Mwrth[1:10,1:5]
+
+# $report$maf$r
+# [1] "7 Markers removed by MAF = 0.05"
+# 
+# $report$maf$whichID
+# [1] "snp16.SNP2"       "snp22.rs35554619" "snp25.rs2970847"  "snp28.rs1800206" 
+# [5] "snp29.rs4253778"  "snp6.rs822387"    "snp8.rs17300539" 
+# 
+
+# $report$cr$r
+# [1] "2 Markers removed by Call Rate = 0.95"
+# 
+# $report$cr$whichID
+# [1] "snp22.rs35554619" "snp5.rs10937273" 
+
+# **************************************************************************** #
+# ***************                  popgen                                             
+# **************************************************************************** #
+
 pop.gen <- popgen(M=Mwrth)
 head(pop.gen$whole$Markers)
 str(Mwrth)
@@ -167,16 +190,21 @@ names(Mwrth)
 # convert row.names to column
 dat=rownames_to_column(Mwrth,var="unique_id")
 names(dat)
+dim(dat)
 
-test=dat%>%
+genotypes=dat%>%
   as_tibble()%>%
   gather(snp, allele, snp1.rs10865710:snp9.rs266729)%>%
   group_by(snp,allele)%>%
   count()%>%
   ungroup() %>%
-  spread(allele, n, fill=0)
+  spread(allele, n, fill=0)%>%
+  rename("BB"=`0`,"AB"=`1`,"AA"=`2`,"Missing"=`<NA>`)%>%
+  write_csv(path =paste0(result.dir,"adipoq_genotypes.csv",na=""))
 
 # need to order, rename, output as table
+
+
 
 
 # https://stackoverflow.com/questions/25811756/summarizing-counts-of-a-factor-with-dplyr
