@@ -30,6 +30,7 @@ library(snpReady)
 library(naniar)
 library(kinship2)
 library(coxme)
+library(nlme)
 
 # **************************************************************************** #
 # ***************         AssocPed_Full3_10Oct13.dat                                              
@@ -92,7 +93,9 @@ names(df)
 
 # merge SNP alleles
 df1=df%>%
-  mutate(unique_id=paste0(Fam,".",Ind),
+  mutate(unique_id=as.character(paste0(Fam,".",Ind)),
+         unique_fa=as.character(paste0(Fam,".",FA)),
+         unique_mo=as.character(paste0(Fam,".",MO)),
          snp1.rs10865710=paste0(rs10865710_A1,"_",rs10865710_A2),
          snp2.rs12497191=paste0(rs12497191_A1,"_",rs12497191_A2),
          snp3.rs1801282=paste0(rs1801282_A1,"_",rs1801282_A2),
@@ -122,7 +125,7 @@ df1=df%>%
          snp27.rs135539=paste0(rs135539_A1,"_",rs135539_A2),
          snp28.rs1800206=paste0(rs1800206_A1,"_",rs1800206_A2),
          snp29.rs4253778=paste0(rs4253778_A1,"_",rs4253778_A2))%>%
-  select(unique_id,Fam,Ind,FA,MO,Sex,d15n,Genotyped,
+  select(unique_id,unique_fa,unique_mo,Fam,Ind,FA,MO,Sex,d15n,Genotyped,
          WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp,
          snp1.rs10865710, snp2.rs12497191, snp3.rs1801282, 
          snp4.rs3856806, snp5.rs10937273, snp6.rs822387,
@@ -159,19 +162,15 @@ df.geno=df1%>%
 levels(df.geno$snp)
 names(df.geno)
 
-<<<<<<< HEAD
 # **************************************************************************** #
 # ***************                  SNP ready                                             
 # **************************************************************************** #
 
-=======
+
 # SNP ready
-names(df.geno)
->>>>>>> 5b89853f976f428494d9960132dd9a7fe5882398
 # https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
 
 names(df.geno)
-
 geno=df.geno%>%
   select(unique_id,snp,A1,A2)%>%
   as.matrix()
@@ -223,14 +222,20 @@ genotypes=dat%>%
   ungroup() %>%
   spread(allele, n, fill=0)%>%
   rename("BB"=`0`,"AB"=`1`,"AA"=`2`,"Missing"=`<NA>`)%>%
+  mutate(snp=factor(snp, levels = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
+                                    "snp4.rs3856806","snp5.rs10937273","snp6.rs822387",
+                                    "snp7.APM11426","snp8.rs17300539","snp9.rs266729",
+                                    "snp10.rs182052","snp11.rs822393","snp12.rs822394",
+                                    "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
+                                    "snp16.SNP2","snp17.rs2241766","snp18.rs1501299",
+                                    "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
+                                    "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
+                                    "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
+                                    "snp28.rs1800206","snp29.rs4253778")))%>%
+  arrange(snp)%>%
+  select(snp, AA, AB, BB, Missing)%>%
   write_csv(path =paste0(result.dir,"adipoq_genotypes.csv",na=""))
 
-# need to order, rename, output as table
-
-
-
-
-# https://stackoverflow.com/questions/25811756/summarizing-counts-of-a-factor-with-dplyr
 
 # merge genotype data back with outcomes data
 # genotype data
@@ -244,16 +249,34 @@ names(df1)
 length(unique(df1$unique_id)) # 2231
 
 df.m=df1%>%
-  select(unique_id, Fam,Ind,FA,MO,Sex,d15n,Genotyped,WHRp,
+  select(unique_id,unique_fa,unique_mo, Fam,Ind,FA,MO,Sex,d15n,Genotyped,WHRp,
         BMIp,BodFp,VillageGroup,age,Adipp)
 
 # merge
 df.analysis=left_join(df.m, dat, by="unique_id")
 names(df.analysis)
 range(df.analysis$Fam)
+df.analysis$unique_id
 
 # test analysis 
-require(kinship2)
-load("gaw.rda")
+data(minnbreast)
+str(minnbreast)
+minnbreast$id
 
-gped <- with(df.analysis, pedigree(unique_id, FA, MO, Sex, famid=Fam))
+str(df.analysis)
+unique(df.analysis$unique_id)
+which(duplicated(df.analysis$unique_id))
+which(duplicated(df.analysis$Ind))
+df.analysis$Sex=as.character(df.analysis$Sex)
+df.analysis$unique_id=as.numeric(df.analysis$unique_id)
+
+gped <- with(df.analysis, pedigree(unique_id, unique_fa, unique_mo, Sex, Fam))
+
+# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.592.1810&rep=rep1&type=pdf
+
+
+
+fit2 <- lmekin(Adipp~snp7.APM11426+Sex+VillageGroup+age+d15n+(1|unique_id), data=df.analysis, method="ML")
+summary(fit2)
+names(df.analysis)
+tidy(fit2)
