@@ -55,7 +55,8 @@ names(dat)
 
 df=dat%>%
   select(Fam,Ind,FA,MO,Sex,d15n,Genotyped,
-    rs10865710_A1, rs10865710_A2,        # PPARG
+         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp, 
+         rs10865710_A1, rs10865710_A2,        # PPARG
          rs12497191_A1, rs12497191_A2,
          rs1801282_A1, rs1801282_A2,
          rs3856806_A1, rs3856806_A2,
@@ -122,6 +123,7 @@ df1=df%>%
          snp28.rs1800206=paste0(rs1800206_A1,"_",rs1800206_A2),
          snp29.rs4253778=paste0(rs4253778_A1,"_",rs4253778_A2))%>%
   select(unique_id,Fam,Ind,FA,MO,Sex,d15n,Genotyped,
+         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp,
          snp1.rs10865710, snp2.rs12497191, snp3.rs1801282, 
          snp4.rs3856806, snp5.rs10937273, snp6.rs822387,
          snp7.APM11426, snp8.rs17300539,  snp9.rs266729,
@@ -131,7 +133,9 @@ df1=df%>%
          snp19.rs2241767, snp20.rs3774261, snp21.rs3774262,
          snp22.rs35554619, snp23.rs8192678, snp24.rs17574213,
          snp25.rs2970847, snp26.rs135549, snp27.rs135539,
-         snp28.rs1800206, snp29.rs4253778)%>%
+         snp28.rs1800206, snp29.rs4253778)
+
+df.geno=df1%>%
   gather(snp, allele, snp1.rs10865710:snp29.rs4253778)%>%
   separate(allele, c("A1", "A2"), sep="_")%>%
   mutate(A1=recode(A1, # A=1, C=2, G=3, T=4
@@ -141,17 +145,34 @@ df1=df%>%
          A2=recode(A2, # A=1, C=2, G=3, T=4
                    "1"="A","2"="C", 
                    "3"="G","4"="T",
-                   "0"="NA"))%>%na_if("NA")  
+                   "0"="NA"))%>%na_if("NA")%>%
+  mutate(snp=factor(snp, levels = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
+                                    "snp4.rs3856806","snp5.rs10937273","snp6.rs822387",
+                                    "snp7.APM11426","snp8.rs17300539","snp9.rs266729",
+                                    "snp10.rs182052","snp11.rs822393","snp12.rs822394",
+                                    "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
+                                    "snp16.SNP2","snp17.rs2241766","snp18.rs1501299",
+                                    "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
+                                    "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
+                                    "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
+                                    "snp28.rs1800206","snp29.rs4253778")))
+levels(df.geno$snp)
+names(df.geno)
 
+<<<<<<< HEAD
 # **************************************************************************** #
 # ***************                  SNP ready                                             
 # **************************************************************************** #
 
+=======
+# SNP ready
+names(df.geno)
+>>>>>>> 5b89853f976f428494d9960132dd9a7fe5882398
 # https://cran.r-project.org/web/packages/snpReady/vignettes/snpReady-vignette.html
 
-names(df1)
+names(df.geno)
 
-geno=df1%>%
+geno=df.geno%>%
   select(unique_id,snp,A1,A2)%>%
   as.matrix()
 
@@ -183,6 +204,8 @@ Mwrth[1:10,1:5]
 
 pop.gen <- popgen(M=Mwrth)
 head(pop.gen$whole$Markers)
+qc_dat=pop.gen$whole$Markers
+analysis_snps=row.names(qc_dat)
 str(Mwrth)
 summary(Mwrth)
 names(Mwrth)
@@ -209,5 +232,28 @@ genotypes=dat%>%
 
 # https://stackoverflow.com/questions/25811756/summarizing-counts-of-a-factor-with-dplyr
 
+# merge genotype data back with outcomes data
+# genotype data
+dim(dat)
+names(dat)
+length(unique(dat$unique_id)) # 967
 
+# outcomes data
+dim(df1)
+names(df1)
+length(unique(df1$unique_id)) # 2231
 
+df.m=df1%>%
+  select(unique_id, Fam,Ind,FA,MO,Sex,d15n,Genotyped,WHRp,
+        BMIp,BodFp,VillageGroup,age,Adipp)
+
+# merge
+df.analysis=left_join(df.m, dat, by="unique_id")
+names(df.analysis)
+range(df.analysis$Fam)
+
+# test analysis 
+require(kinship2)
+load("gaw.rda")
+
+gped <- with(df.analysis, pedigree(unique_id, FA, MO, Sex, famid=Fam))
