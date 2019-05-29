@@ -258,25 +258,77 @@ names(df.analysis)
 range(df.analysis$Fam)
 df.analysis$unique_id
 
-# test analysis 
-data(minnbreast)
-str(minnbreast)
-minnbreast$id
+# extract function
+extract_coxme_table <- function (mod){
+  beta <- mod$coefficients$fixed
+  nvar <- length(beta)
+  nfrail <- nrow(mod$var) - nvar
+  se <- sqrt(diag(mod$var)[nfrail + 1:nvar])
+  z<- round(beta/se, 2)
+  p<- signif(1 - pchisq((beta/se)^2, 1), 2)
+  table=data.frame(cbind(beta,se,z,p))
+  return(table)
+}
 
 str(df.analysis)
-unique(df.analysis$unique_id)
-which(duplicated(df.analysis$unique_id))
-which(duplicated(df.analysis$Ind))
-df.analysis$Sex=as.character(df.analysis$Sex)
-df.analysis$unique_id=as.numeric(df.analysis$unique_id)
+length(unique(df.analysis$unique_id))
 
-gped <- with(df.analysis, pedigree(unique_id, unique_fa, unique_mo, Sex, Fam))
+## Data.frame to deposit output from loop
+TABLE.1<-data.frame(# Analytical
+  snp=character(),
+  param=character(),
+  key=character(),
+  value=numeric(),
+  stringsAsFactors=FALSE);TABLE.1
 
-# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.592.1810&rep=rep1&type=pdf
+# outcome
+outcome.index=c("WHRp","BMIp","Adipp")
 
+# index
+snp.index = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
+           "snp4.rs3856806","snp5.rs10937273","snp6.rs822387",
+           "snp7.APM11426","snp8.rs17300539","snp9.rs266729",
+           "snp10.rs182052","snp11.rs822393","snp12.rs822394",
+           "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
+           "snp16.SNP2","snp17.rs2241766","snp18.rs1501299",
+           "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
+           "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
+           "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
+           "snp28.rs1800206","snp29.rs4253778")
 
+# Create index for loops
+index=snp.index;index; 
+myIndex<-length(index) 
 
-fit2 <- lmekin(Adipp~snp7.APM11426+Sex+VillageGroup+age+d15n+(1|unique_id), data=df.analysis, method="ML")
-summary(fit2)
-names(df.analysis)
-tidy(fit2)
+# Start the Loop
+for (i in 1:(myIndex))
+{
+  # Create column index
+  col=index[i];col
+  
+  df=df.analysis%>%
+    select(unique_id, Adipp, index[i],Sex, VillageGroup, age, d15n)
+
+# run model 
+formula=paste0("Adipp~",index[i],"+Sex+VillageGroup+age+d15n+(1|unique_id)")
+fit <- lmekin(formula, data=df, method="ML")
+
+# extract params
+model.param=fit%>%
+  extract_coxme_table()
+model=as_tibble(rownames_to_column(model.param,var="param"))
+
+# model output
+output=model%>%
+  gather(key,value,beta:p)%>%
+  mutate(snp=index[i])%>%
+  select(snp, param, key, value)
+
+# populate table
+TABLE.1[i,1]
+TABLE.1[i,2]
+TABLE.1[i,3]
+TABLE.1[i,4]
+
+# need to figure out how to combine output
+
