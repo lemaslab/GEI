@@ -236,7 +236,6 @@ genotypes=dat%>%
   select(snp, AA, AB, BB, Missing)%>%
   write_csv(path =paste0(result.dir,"adipoq_genotypes.csv",na=""))
 
-
 # merge genotype data back with outcomes data
 # genotype data
 dim(dat)
@@ -279,14 +278,22 @@ out.ind=length(outcome.index)
 
 # index
 snp.index = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
-           "snp4.rs3856806",
-           "snp7.APM11426","snp9.rs266729",
+           "snp4.rs3856806", "snp7.APM11426","snp9.rs266729",
            "snp10.rs182052","snp11.rs822393","snp12.rs822394",
            "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
            "snp17.rs2241766","snp18.rs1501299",
            "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
            "snp23.rs8192678","snp24.rs17574213",
            "snp26.rs135549","snp27.rs135539")
+
+TABLE.1<-data.frame(outcome=character(),
+                    snp=character(),
+                     model=character(),
+                     beta=numeric(),
+                     se=numeric(),
+                     z=numeric(),
+                     p=numeric(),
+                     stringsAsFactors=FALSE);TABLE.1
 
 # Create index for loops
 index=snp.index;index; 
@@ -301,7 +308,7 @@ for (i in 1:(myIndex))
     # create snp index
     snp=index[i];col
     
-    # create outcome inde
+    # create outcome index
     out=outcome.index[j]
   
     # create data.frame 
@@ -321,8 +328,22 @@ model=as_tibble(rownames_to_column(model.param,var="param"))
 output=model%>%
   gather(key,value,beta:p)%>%
   mutate(outcome=outcome.index[j],
-        snp=index[i])%>%
-  select(outcome,snp, param, key, value)%>%
-  write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
+        snp=index[i],
+        model="main_effect")%>%
+  select(outcome,snp,model, param, key, value)%>%
+  filter(param==index[i] & outcome==outcome.index[j])%>%
+  spread(key, value)%>%
+  select(outcome,snp,model,beta,se,z,p)
+
+TABLE.1[i,1]=output$outcome
+TABLE.1[i,2]=output$snp
+TABLE.1[i,3]=output$model
+TABLE.1[i,4]=output$beta
+TABLE.1[i,5]=output$se
+TABLE.1[i,6]=output$z
+TABLE.1[i,7]=output$p
+  
   }
 }
+
+#write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
