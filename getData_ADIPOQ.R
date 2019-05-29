@@ -279,15 +279,14 @@ out.ind=length(outcome.index)
 
 # index
 snp.index = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
-           "snp4.rs3856806","snp5.rs10937273","snp6.rs822387",
-           "snp7.APM11426","snp8.rs17300539","snp9.rs266729",
+           "snp4.rs3856806",
+           "snp7.APM11426","snp9.rs266729",
            "snp10.rs182052","snp11.rs822393","snp12.rs822394",
            "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
-           "snp16.SNP2","snp17.rs2241766","snp18.rs1501299",
+           "snp17.rs2241766","snp18.rs1501299",
            "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
-           "snp22.rs35554619","snp23.rs8192678","snp24.rs17574213",
-           "snp25.rs2970847","snp26.rs135549","snp27.rs135539",
-           "snp28.rs1800206","snp29.rs4253778")
+           "snp23.rs8192678","snp24.rs17574213",
+           "snp26.rs135549","snp27.rs135539")
 
 # Create index for loops
 index=snp.index;index; 
@@ -310,7 +309,7 @@ for (i in 1:(myIndex))
     select(unique_id, outcome.index[j], index[i],Sex, VillageGroup, age, d15n)
 
 # run model 
-formula=paste0(outcome.index[j],"~",index[i],"+Sex+VillageGroup+age+d15n+(1|unique_id)")
+formula=as.formula(paste0(outcome.index[j],"~",index[i],"+Sex+VillageGroup+age+d15n+(1|unique_id)"))
 fit <- lmekin(formula, data=df, method="ML")
 
 # extract params
