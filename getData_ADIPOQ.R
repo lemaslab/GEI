@@ -283,8 +283,8 @@ snp.index = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282",
            "snp10.rs182052","snp11.rs822393","snp12.rs822394",
            "snp13.rs822395","snp14.rs822396","snp15.rs17846866", 
            "snp17.rs2241766","snp18.rs1501299",
-           "snp19.rs2241767","snp20.rs3774261","snp21.rs3774262",
-           "snp23.rs8192678","snp24.rs17574213",
+           "snp19.rs2241767","snp21.rs3774262",
+             "snp23.rs8192678",
            "snp26.rs135549","snp27.rs135539")
 
 TABLE.1<-data.frame(outcome=character(),
@@ -360,3 +360,78 @@ table=TABLE.1%>%
          p_final=paste0(p," ",beta_se))%>%
   write_csv(path=paste0(result.dir,"adipoq_snps_main_effect.csv"),na="")
 
+# interactions
+TABLE.2<-data.frame(outcome=character(),
+                    snp=character(),
+                    model=character(),
+                    beta=numeric(),
+                    se=numeric(),
+                    z=numeric(),
+                    p=numeric(),
+                    stringsAsFactors=FALSE);TABLE.2
+
+
+# Create index for loops
+index=snp.index;index; 
+myIndex<-length(index) 
+
+# create table index
+n=myIndex*out.ind
+
+# create model index 
+formula.snp=lapply(index, function(x){paste0("~",x,"*d15n+Sex+VillageGroup+age+(1|unique_id)")})
+formula.outcome=lapply(outcome.index, function(x){paste0(x,formula.snp)})
+formula.list=unlist(formula.outcome, recursive = TRUE)
+formula.index=length(formula.list)
+
+
+# Start the Loop
+for (i in 1:(formula.index))
+{
+  # select model: kinda ugly
+  formula.final=as.formula(formula.list[i])
+  outcome=str_split(formula.final,"~")[[2]]
+  snp.tmp=str_split(formula.final,"~")[[3]]
+  snp=str_split_fixed(snp.tmp," ", n=2)[1]
+  
+  # run model
+  fit <- lmekin(formula.final, data=df.analysis, method="ML")
+  
+  # extract params
+  model.param=fit%>%extract_coxme_table()
+  model=as_tibble(rownames_to_column(model.param,var="param"))
+  
+  # model output
+  output=model%>%gather(key,value,beta:p)%>%
+    mutate(outcome=outcome,
+           snp=snp,
+           model="interaction")%>%
+    select(outcome,snp,model, param, key, value)%>%
+    filter(param==paste0(snp,":d15n"))%>%
+    spread(key, value)%>%
+    select(outcome,snp,model,beta,se,z,p)
+  
+  # create table index
+  TABLE.2[i,1]=outcome
+  TABLE.2[i,2]=output$snp
+  TABLE.2[i,3]=output$model
+  TABLE.2[i,4]=output$beta
+  TABLE.2[i,5]=output$se
+  TABLE.2[i,6]=output$z
+  TABLE.2[i,7]=output$p
+} # END
+
+# modify table1 output
+names(TABLE.2)
+head(TABLE.2)
+str(TABLE.2)
+range(TABLE.2$p, na.rm=T)
+
+# round
+table=TABLE.2%>%
+  mutate(beta=round(beta, 1),
+         se=round(se, 1),
+         p=round(p, 3),
+         beta_se=paste0("(β= ",beta," ± S.E.= ",se,")"),
+         p_final=paste0(p," ",beta_se))%>%
+  write_csv(path=paste0(result.dir,"adipoq_snps_interaction.csv"),na="")
