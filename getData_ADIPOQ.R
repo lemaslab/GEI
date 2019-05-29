@@ -300,30 +300,38 @@ tmp.table=TABLE.1
 index=snp.index;index; 
 myIndex<-length(index) 
 
+# create table index
+n=myIndex*out.ind
+
+# create snp index
+snp=index[i];snp
+
+# create outcome index
+out=outcome.index[j];out
+
+# create model index 
+formula.snp=lapply(index, function(x){paste0("~",x,"+Sex+VillageGroup+age+d15n+(1|unique_id)")})
+formula.outcome=lapply(outcome.index, function(x){paste0(x,formula.snp)})
+formula.list=unlist(formula.outcome, recursive = TRUE)
+formula.index=length(formula.list)
+
+
 # Start the Loop
-for (i in 1:(myIndex))
+for (i in 1:(formula.index))
 {
   
-  # create snp index
-  snp=index[i];snp
-  
-  
-  for(j in 1:(out.ind))
-    {
+    # select model: kinda ugly
+    formula.final=as.formula(formula.list[i])
+    outcome=str_split(formula.final,"~")[[2]]
+    snp.tmp=str_split(formula.final,"~")[[3]]
+    snp=str_split_fixed(snp.tmp," ", n=2)[1]
     
-      # create outcome index
-      out=outcome.index[j];out
-  
-      # create data.frame 
-      df=df.analysis%>%select(unique_id,out,snp,Sex,VillageGroup,age,d15n)
+    # run model
+    fit <- lmekin(formula.final, data=df.analysis, method="ML")
 
-      # run model 
-      formula=as.formula(paste0(out,"~",snp,"+Sex+VillageGroup+age+d15n+(1|unique_id)"))
-      fit <- lmekin(formula, data=df, method="ML")
-
-      # extract params
-      model.param=fit%>%extract_coxme_table()
-      model=as_tibble(rownames_to_column(model.param,var="param"))
+    # extract params
+    model.param=fit%>%extract_coxme_table()
+    model=as_tibble(rownames_to_column(model.param,var="param"))
 
       # model output
       output=model%>%gather(key,value,beta:p)%>%
@@ -334,18 +342,16 @@ for (i in 1:(myIndex))
               filter(param==snp)%>%
               spread(key, value)%>%
               select(outcome,snp,model,beta,se,z,p)
-  }
+  
+      # create table index
+      TABLE.1[i,1]=outcome
+      TABLE.1[i,2]=output$snp
+      TABLE.1[i,3]=output$model
+      TABLE.1[i,4]=output$beta
+      TABLE.1[i,5]=output$se
+      TABLE.1[i,6]=output$z
+      TABLE.1[i,7]=output$p
+} # END
 
-  TABLE.1[i,1]=output$outcome
-  TABLE.1[i,2]=output$snp
-  TABLE.1[i,3]=output$model
-  TABLE.1[i,4]=output$beta
-  TABLE.1[i,5]=output$se
-  TABLE.1[i,6]=output$z
-  TABLE.1[i,7]=output$p
-  
-  tmp=rbind(tmp.table,TABLE.1)
-  
-  }
 
 #write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
