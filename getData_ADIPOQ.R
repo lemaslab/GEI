@@ -326,4 +326,4 @@ output=model%>%
   select(outcome,snp, param, key, value)%>%
   write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
   }
-  }
+}
