@@ -331,17 +331,17 @@ output=model%>%
         snp=index[i],
         model="main_effect")%>%
   select(outcome,snp,model, param, key, value)%>%
-  filter(param==index[i] & outcome==outcome.index[j])%>%
+  filter(param==snp[i])%>%
   spread(key, value)%>%
   select(outcome,snp,model,beta,se,z,p)
 
-TABLE.1[i,1]=output$outcome
-TABLE.1[i,2]=output$snp
-TABLE.1[i,3]=output$model
-TABLE.1[i,4]=output$beta
-TABLE.1[i,5]=output$se
-TABLE.1[i,6]=output$z
-TABLE.1[i,7]=output$p
+TABLE.1[j,1]=output$outcome
+TABLE.1[j,2]=output$snp
+TABLE.1[j,3]=output$model
+TABLE.1[j,4]=output$beta
+TABLE.1[j,5]=output$se
+TABLE.1[j,6]=output$z
+TABLE.1[j,7]=output$p
   
   }
 }
