@@ -273,16 +273,9 @@ extract_coxme_table <- function (mod){
 str(df.analysis)
 length(unique(df.analysis$unique_id))
 
-## Data.frame to deposit output from loop
-TABLE.1<-data.frame(# Analytical
-  snp=character(),
-  param=character(),
-  key=character(),
-  value=numeric(),
-  stringsAsFactors=FALSE);TABLE.1
-
 # outcome
 outcome.index=c("WHRp","BMIp","Adipp")
+out.ind=length(outcome.index)
 
 # index
 snp.index = c("snp1.rs10865710","snp2.rs12497191","snp3.rs1801282", 
@@ -303,14 +296,21 @@ myIndex<-length(index)
 # Start the Loop
 for (i in 1:(myIndex))
 {
-  # Create column index
-  col=index[i];col
+  for(j in 1:(out.ind))
+    {
   
-  df=df.analysis%>%
-    select(unique_id, Adipp, index[i],Sex, VillageGroup, age, d15n)
+    # create snp index
+    snp=index[i];col
+    
+    # create outcome inde
+    out=outcome.index[j]
+  
+    # create data.frame 
+    df=df.analysis%>%
+    select(unique_id, outcome.index[j], index[i],Sex, VillageGroup, age, d15n)
 
 # run model 
-formula=paste0("Adipp~",index[i],"+Sex+VillageGroup+age+d15n+(1|unique_id)")
+formula=paste0(outcome.index[j],"~",index[i],"+Sex+VillageGroup+age+d15n+(1|unique_id)")
 fit <- lmekin(formula, data=df, method="ML")
 
 # extract params
@@ -321,14 +321,9 @@ model=as_tibble(rownames_to_column(model.param,var="param"))
 # model output
 output=model%>%
   gather(key,value,beta:p)%>%
-  mutate(snp=index[i])%>%
-  select(snp, param, key, value)
-
-# populate table
-TABLE.1[i,1]
-TABLE.1[i,2]
-TABLE.1[i,3]
-TABLE.1[i,4]
-
-# need to figure out how to combine output
-
+  mutate(outcome=outcome.index[j],
+        snp=index[i])%>%
+  select(outcome,snp, param, key, value)%>%
+  write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
+  }
+  }
