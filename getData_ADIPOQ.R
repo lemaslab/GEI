@@ -14,7 +14,6 @@ work.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\
 data.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");data.dir
 result.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\results\\");result.dir
 
-
 # Set Working Directory
 setwd(work.dir)
 list.files()
@@ -51,17 +50,16 @@ head(dat); str(dat); names(dat)
 
 names(dat)
 
-# expect monomorphic among (ADIPOQ:rs822387, ADIPOQ:rs822395, ADIPOQ:rs3774262, 
-#                           ADIPOQ:rs35554619, PPARGC1A:rs8192678)
-
 df=dat%>%
-  select(Fam,Ind,FA,MO,Sex,d15n,Genotyped,
-         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp, 
+  select(Fam,Ind,FA,MO,Sex,d15n,Genotyped,    # covariates
+         VillageGroup,d15n,age,
+         Adipp,ApoA1p,BMIp,BodFp,HCAp,HDLp,   # outcomes
+         LCholp,LDLp,LTrigp,ThCAp,VLDLp,WCAp,
          rs10865710_A1, rs10865710_A2,        # PPARG
          rs12497191_A1, rs12497191_A2,
          rs1801282_A1, rs1801282_A2,
          rs3856806_A1, rs3856806_A2,
-         rs10937273_A1, rs10937273_A2,   # ADIPOQ
+         rs10937273_A1, rs10937273_A2,        # ADIPOQ
          rs822387_A1, rs822387_A2,
          rs822387_A1, rs822387_A2,
          APM11426_A1, APM11426_A2,
@@ -80,10 +78,10 @@ df=dat%>%
          rs3774261_A1, rs3774261_A2,
          rs3774262_A1, rs3774262_A2,
          rs35554619_A1, rs35554619_A2,
-         rs8192678_A1, rs8192678_A2,     # PPARGC1A
+         rs8192678_A1, rs8192678_A2,           # PPARGC1A
          rs17574213_A1, rs17574213_A2,
          rs2970847_A1, rs2970847_A2,
-         rs135549_A1, rs135549_A2,       # PPARA
+         rs135549_A1, rs135549_A2,             # PPARA
          rs135539_A1, rs135539_A2, 
          rs1800206_A1, rs1800206_A2,
          rs4253778_A1, rs4253778_A2)
@@ -125,8 +123,9 @@ df1=df%>%
          snp27.rs135539=paste0(rs135539_A1,"_",rs135539_A2),
          snp28.rs1800206=paste0(rs1800206_A1,"_",rs1800206_A2),
          snp29.rs4253778=paste0(rs4253778_A1,"_",rs4253778_A2))%>%
-  select(unique_id,unique_fa,unique_mo,Fam,Ind,FA,MO,Sex,d15n,Genotyped,
-         WHRp,BMIp,BodFp,VillageGroup,d15n,age,Adipp,
+  select(unique_id,unique_fa,unique_mo,Fam,Ind,FA,MO,Sex,d15n,Genotyped,VillageGroup,age,
+         Adipp,ApoA1p,BMIp,BodFp,HCAp,HDLp,   # outcomes
+         LCholp,LDLp,LTrigp,ThCAp,VLDLp,WCAp, # outcomes
          snp1.rs10865710, snp2.rs12497191, snp3.rs1801282, 
          snp4.rs3856806, snp5.rs10937273, snp6.rs822387,
          snp7.APM11426, snp8.rs17300539,  snp9.rs266729,
@@ -248,8 +247,9 @@ names(df1)
 length(unique(df1$unique_id)) # 2231
 
 df.m=df1%>%
-  select(unique_id,unique_fa,unique_mo, Fam,Ind,FA,MO,Sex,d15n,Genotyped,WHRp,
-        BMIp,BodFp,VillageGroup,age,Adipp)
+  select(unique_id,unique_fa,unique_mo, Fam,Ind,FA,MO,Sex,d15n,Genotyped,VillageGroup,age,
+         Adipp,ApoA1p,BMIp,BodFp,HCAp,HDLp,   # outcomes
+         LCholp,LDLp,LTrigp,ThCAp,VLDLp,WCAp)
 
 # merge
 df.analysis=left_join(df.m, dat, by="unique_id")
@@ -273,7 +273,8 @@ str(df.analysis)
 length(unique(df.analysis$unique_id))
 
 # outcome
-outcome.index=c("WHRp","BMIp","Adipp")
+outcome.index=c("Adipp","ApoA1p","BMIp","BodFp","HCAp","HDLp","LCholp",
+                "LDLp","LTrigp","ThCAp","VLDLp","WCAp")
 out.ind=length(outcome.index)
 
 # index
@@ -294,7 +295,6 @@ TABLE.1<-data.frame(outcome=character(),
                      z=numeric(),
                      p=numeric(),
                      stringsAsFactors=FALSE);TABLE.1
-tmp.table=TABLE.1
 
 # Create index for loops
 index=snp.index;index; 
@@ -302,12 +302,6 @@ myIndex<-length(index)
 
 # create table index
 n=myIndex*out.ind
-
-# create snp index
-snp=index[i];snp
-
-# create outcome index
-out=outcome.index[j];out
 
 # create model index 
 formula.snp=lapply(index, function(x){paste0("~",x,"+Sex+VillageGroup+age+d15n+(1|unique_id)")})
@@ -319,7 +313,6 @@ formula.index=length(formula.list)
 # Start the Loop
 for (i in 1:(formula.index))
 {
-  
     # select model: kinda ugly
     formula.final=as.formula(formula.list[i])
     outcome=str_split(formula.final,"~")[[2]]
@@ -335,7 +328,7 @@ for (i in 1:(formula.index))
 
       # model output
       output=model%>%gather(key,value,beta:p)%>%
-              mutate(outcome=out,
+              mutate(outcome=outcome,
                      snp=snp,
                      model="main_effect")%>%
               select(outcome,snp,model, param, key, value)%>%
@@ -353,5 +346,17 @@ for (i in 1:(formula.index))
       TABLE.1[i,7]=output$p
 } # END
 
+# modify table1 output
+names(TABLE.1)
+head(TABLE.1)
+str(TABLE.1)
 
-#write_csv(path=paste0(result.dir,outcome.index[j],"_",index[i],".csv"),na="")
+# round
+table=TABLE.1%>%
+  mutate(beta=round(beta, 1),
+         se=round(se, 1),
+         p=round(p, 3),
+         beta_se=paste0("(β= ",beta," ± S.E.= ",se,")"),
+         p_final=paste0(p," ",beta_se))%>%
+  write_csv(path=paste0(result.dir,"adipoq_snps_main_effect.csv"),na="")
+
