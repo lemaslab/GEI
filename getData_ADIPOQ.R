@@ -1,6 +1,6 @@
 
 #' ---
-#' title: "Data management for ADIPOQ SNPS"
+#' title: "Data Analysis for ADIPOQ SNPS"
 #' author: "Dominick Lemas"
 #' date: "May 22, 2019"
 #' ---
@@ -20,11 +20,10 @@ library(nlme)
 library(stargazer)
 library(effects)
 library(ggplot2)
-
 library(sjPlot)
 library(sjmisc)
-library(ggplot2)
-data(efc)
+
+
 
 # **************************************************************************** #
 # ***************                Directory Variables           *************** #
@@ -204,7 +203,7 @@ Mwrth[1:10,1:5]
 # [1] "snp22.rs35554619" "snp5.rs10937273" 
 
 # **************************************************************************** #
-# ***************                  popgen                                             
+# ***************           popgen: genotypes and HWE                                             
 # **************************************************************************** #
 
 pop.gen <- popgen(M=Mwrth)
@@ -242,6 +241,11 @@ genotypes=dat%>%
   select(snp, AA, AB, BB, Missing)%>%
   write_csv(path =paste0(result.dir,"adipoq_genotypes.csv",na=""))
 
+# **************************************************************************** #
+# ***************       Merge data for regression models                                             
+# **************************************************************************** #
+
+
 # merge genotype data back with outcomes data
 # genotype data
 dim(dat)
@@ -264,6 +268,12 @@ names(df.analysis)
 range(df.analysis$Fam)
 df.analysis$unique_id
 
+# **************************************************************************** #
+# ***************       Funciton for extracting parameters lmekin                                             
+# **************************************************************************** #
+
+# https://stackoverflow.com/questions/43720260/how-to-extract-p-values-from-lmekin-objects-in-coxme-package
+
 # extract function
 extract_coxme_table <- function (mod){
   beta <- mod$coefficients$fixed
@@ -275,6 +285,10 @@ extract_coxme_table <- function (mod){
   table=data.frame(cbind(beta,se,z,p))
   return(table)
 }
+
+# **************************************************************************** #
+# ***************       Main Effect Analysis                                             
+# **************************************************************************** #
 
 str(df.analysis)
 length(unique(df.analysis$unique_id))
@@ -367,6 +381,10 @@ table=TABLE.1%>%
          p_final=paste0(p," ",beta_se))%>%
   write_csv(path=paste0(result.dir,"adipoq_snps_main_effect.csv"),na="")
 
+# **************************************************************************** #
+# ***************       Interaction Analysis                                             
+# **************************************************************************** #
+
 # interactions
 TABLE.2<-data.frame(outcome=character(),
                     snp=character(),
@@ -443,12 +461,16 @@ table=TABLE.2%>%
          p_final=paste0(p," ",beta_se))%>%
   write_csv(path=paste0(result.dir,"adipoq_snps_interaction.csv"),na="")
 
-# explore interactions 
-# https://ademos.people.uic.edu/Chapter13.html#3_continuous_x_categorical_regression
-GPA.2.Model.1 <- lm(LDLp~snp11.rs822393+d15n+Sex+VillageGroup+age, df.analysis)
-GPA.2.Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
+# **************************************************************************** #
+# ***************       Regression Plotting Interactions                                             
+# **************************************************************************** #
 
-stargazer(GPA.2.Model.1, GPA.2.Model.2,type="html", 
+# explore interactions with stargazer 
+# https://ademos.people.uic.edu/Chapter13.html#3_continuous_x_categorical_regression
+Model.1 <- lm(LDLp~snp11.rs822393+d15n+Sex+VillageGroup+age, df.analysis)
+Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
+
+stargazer(Model.1, Model.2,type="html", 
           column.labels = c("Main Effects", "Interaction"), 
           intercept.bottom = FALSE, 
           single.row=FALSE,     
@@ -456,31 +478,14 @@ stargazer(GPA.2.Model.1, GPA.2.Model.2,type="html",
           header=FALSE,
           out=paste0(result.dir,"LDLp_snp11.rs822393_d15n.html")) 
 
-
-Inter.GPA.2 <- effect('snp11.rs822393*d15n', GPA.2.Model.2,
-                      xlevels=list(genotype = c(-1, 0, 1)),
-                      se=TRUE, confidence.level=.95, typical=mean)
-Inter.GPA.2<-as.data.frame(Inter.GPA.2)
-
 # interaction plot
 # https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_interactions.html
 
-data(efc)
+# theme
 theme_set(theme_sjplot())
 
-# make categorical
-efc$c161sex <- to_factor(efc$c161sex)
-efc$barthtot
-
-# fit model with interaction
-fit <- lm(neg_c_7 ~ c12hour + barthtot * c161sex, data = efc)
-
-plot_model(fit, type = "pred", terms = c("barthtot", "c161sex"))
-
-
-GPA.2.Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
-plot_model(GPA.2.Model.2, type = "pred", terms = c("snp11.rs822393", "d15n"))
-plot_model(GPA.2.Model.2, type = "pred", terms = c("d15n", "snp11.rs822393"))
-
-
+# plot model interaction
+Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
+plot_model(Model.2, type = "pred", terms = c("snp11.rs822393", "d15n"))
+plot_model(Model.2, type = "pred", terms = c("d15n", "snp11.rs822393"))
 
