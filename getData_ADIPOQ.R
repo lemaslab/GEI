@@ -5,19 +5,6 @@
 #' date: "May 22, 2019"
 #' ---
 
-
-# **************************************************************************** #
-# ***************                Directory Variables           *************** #
-# **************************************************************************** #
-
-work.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");work.dir
-data.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");data.dir
-result.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\results\\");result.dir
-
-# Set Working Directory
-setwd(work.dir)
-list.files()
-
 # **************************************************************************** #
 # ***************                Library                       *************** #
 # **************************************************************************** #
@@ -30,6 +17,26 @@ library(naniar)
 library(kinship2)
 library(coxme)
 library(nlme)
+library(stargazer)
+library(effects)
+library(ggplot2)
+
+library(sjPlot)
+library(sjmisc)
+library(ggplot2)
+data(efc)
+
+# **************************************************************************** #
+# ***************                Directory Variables           *************** #
+# **************************************************************************** #
+
+work.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");work.dir
+data.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\data\\");data.dir
+result.dir=paste0(Sys.getenv("USERPROFILE"),"\\Dropbox (UFL)\\02_Projects\\CANHR\\results\\");result.dir
+
+# Set Working Directory
+setwd(work.dir)
+list.files()
 
 # **************************************************************************** #
 # ***************         AssocPed_Full3_10Oct13.dat                                              
@@ -435,3 +442,45 @@ table=TABLE.2%>%
          beta_se=paste0("(β= ",beta," ± S.E.= ",se,")"),
          p_final=paste0(p," ",beta_se))%>%
   write_csv(path=paste0(result.dir,"adipoq_snps_interaction.csv"),na="")
+
+# explore interactions 
+# https://ademos.people.uic.edu/Chapter13.html#3_continuous_x_categorical_regression
+GPA.2.Model.1 <- lm(LDLp~snp11.rs822393+d15n+Sex+VillageGroup+age, df.analysis)
+GPA.2.Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
+
+stargazer(GPA.2.Model.1, GPA.2.Model.2,type="html", 
+          column.labels = c("Main Effects", "Interaction"), 
+          intercept.bottom = FALSE, 
+          single.row=FALSE,     
+          notes.append = FALSE, 
+          header=FALSE,
+          out=paste0(result.dir,"LDLp_snp11.rs822393_d15n.html")) 
+
+
+Inter.GPA.2 <- effect('snp11.rs822393*d15n', GPA.2.Model.2,
+                      xlevels=list(genotype = c(-1, 0, 1)),
+                      se=TRUE, confidence.level=.95, typical=mean)
+Inter.GPA.2<-as.data.frame(Inter.GPA.2)
+
+# interaction plot
+# https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_interactions.html
+
+data(efc)
+theme_set(theme_sjplot())
+
+# make categorical
+efc$c161sex <- to_factor(efc$c161sex)
+efc$barthtot
+
+# fit model with interaction
+fit <- lm(neg_c_7 ~ c12hour + barthtot * c161sex, data = efc)
+
+plot_model(fit, type = "pred", terms = c("barthtot", "c161sex"))
+
+
+GPA.2.Model.2 <- lm(LDLp~snp11.rs822393*d15n+Sex+VillageGroup+age, df.analysis)
+plot_model(GPA.2.Model.2, type = "pred", terms = c("snp11.rs822393", "d15n"))
+plot_model(GPA.2.Model.2, type = "pred", terms = c("d15n", "snp11.rs822393"))
+
+
+
